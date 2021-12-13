@@ -1,0 +1,14 @@
+.vscode
+.viscode
+.cache
+.yarn
+cache
+dest*
+dist
+node_modules
+.terraform
+yarn.lock
+.env
+*.log
+*.swp
+.next
