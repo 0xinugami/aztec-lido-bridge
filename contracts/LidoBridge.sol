@@ -81,7 +81,7 @@ contract LidoBridge is IDefiBridge {
         // not async
         isAsync = false;
 
-        // the minimum should be 1ETH:1WSTETH
+        // the minimum should be 1ETH:1STETH
         uint256 minOutput = inputValue;
 
         // Check with curve to see if we can get better exchange rate than 1 ETH : 1 STETH
