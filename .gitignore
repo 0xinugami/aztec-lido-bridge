@@ -12,3 +12,4 @@ yarn.lock
 *.log
 *.swp
 .next
+.DS_STORE

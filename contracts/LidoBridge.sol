@@ -67,11 +67,11 @@ contract LidoBridge is IDefiBridge {
         override
         returns (
             uint256 outputValueA,
-            uint256, /* outputValueB */
+            uint256,
             bool isAsync
         )
     {
-        require(msg.sender == rollupProcessor, 'LidoBridge: INVALID_CALLER');
+        require(msg.sender == rollupProcessor, 'LidoBridge: Invalid Caller');
         require(inputAssetA.assetType == Types.AztecAssetType.ETH, 'LidoBridge: Invalid Input Token');
         require(
             outputAssetA.assetType == Types.AztecAssetType.ERC20 && outputAssetA.erc20Address == address(wrappedStETH),
