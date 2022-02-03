@@ -131,7 +131,7 @@ contract LidoBridge is IDefiBridge {
 
         // Exchange stETH to ETH via curve
         IERC20(address(lido)).safeIncreaseAllowance(address(curvePool), stETH);
-        outputValue = curvePool.exchange(curveStETHIndex, curveETHIndex, inputValue, 0);
+        outputValue = curvePool.exchange(curveStETHIndex, curveETHIndex, stETH, 0);
 
         // Send ETH to rollup processor
         payable(rollupProcessor).transfer(outputValue);
