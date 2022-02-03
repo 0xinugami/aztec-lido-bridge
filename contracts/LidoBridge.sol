@@ -32,6 +32,8 @@ interface ILido {
 
 interface IWstETH {
     function wrap(uint256 _stETHAmount) external returns (uint256);
+
+    function unwrap(uint256 _wstETHAmount) external returns (uint256);
 }
 
 contract LidoBridge is IDefiBridge {
@@ -72,14 +74,24 @@ contract LidoBridge is IDefiBridge {
         )
     {
         require(msg.sender == rollupProcessor, 'LidoBridge: Invalid Caller');
-        require(inputAssetA.assetType == Types.AztecAssetType.ETH, 'LidoBridge: Invalid Input Token');
+
+        bool isETHInput = inputAssetA.assetType == Types.AztecAssetType.ETH;
+        bool isWstETHInput = inputAssetA.assetType == Types.AztecAssetType.ERC20 && inputAssetA.erc20Address == address(wrappedStETH);
+
+        require(isETHInput || isWstETHInput, 'LidoBridge: Invalid Input');
+
+        isAsync = false;
+        outputValueA = isETHInput ? wrapETH(inputValue, outputAssetA) : unwrapETH(inputValue, outputAssetA);
+    }
+
+    /**
+        Convert ETH -> wstETH
+     */
+    function wrapETH(uint256 inputValue, Types.AztecAsset calldata outputAsset) private returns (uint256 outputValue) {
         require(
-            outputAssetA.assetType == Types.AztecAssetType.ERC20 && outputAssetA.erc20Address == address(wrappedStETH),
+            outputAsset.assetType == Types.AztecAssetType.ERC20 && outputAsset.erc20Address == address(wrappedStETH),
             'LidoBridge: Invalid Output Token'
         );
-
-        // not async
-        isAsync = false;
 
         // the minimum should be 1ETH:1STETH
         uint256 minOutput = inputValue;
@@ -102,10 +114,27 @@ contract LidoBridge is IDefiBridge {
         uint256 outputStETHBalance = IERC20(address(lido)).balanceOf(address(this));
 
         IERC20(address(lido)).safeIncreaseAllowance(address(wrappedStETH), outputStETHBalance);
-        outputValueA = wrappedStETH.wrap(outputStETHBalance);
+        outputValue = wrappedStETH.wrap(outputStETHBalance);
 
         // send wstETH back to the rollup
-        IERC20(address(wrappedStETH)).safeTransfer(rollupProcessor, outputValueA);
+        IERC20(address(wrappedStETH)).safeTransfer(rollupProcessor, outputValue);
+    }
+
+    /**
+        Convert wstETH to ETH
+     */
+    function unwrapETH(uint256 inputValue, Types.AztecAsset calldata outputAsset) private returns (uint256 outputValue) {
+        require(outputAsset.assetType == Types.AztecAssetType.ETH, 'LidoBridge: Invalid Output Token');
+
+        // Convert wstETH to stETH so we can exchange it on curve
+        uint256 stETH = wrappedStETH.unwrap(inputValue);
+
+        // Exchange stETH to ETH via curve
+        IERC20(address(lido)).safeIncreaseAllowance(address(curvePool), stETH);
+        outputValue = curvePool.exchange(curveStETHIndex, curveETHIndex, inputValue, 0);
+
+        // Send ETH to rollup processor
+        payable(rollupProcessor).transfer(outputValue);
     }
 
     function canFinalise(uint256) external view override returns (bool) {

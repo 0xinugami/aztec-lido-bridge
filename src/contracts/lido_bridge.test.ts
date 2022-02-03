@@ -52,8 +52,8 @@ describe('lido defi bridge', function () {
     });
   });
 
-  it('should stake eth and get stETH back in lido', async () => {
-    // Call convert to swap ETH to ERC20 tokens and return them to caller.
+  it('should stake eth and get wstETH back in lido. Also able to convert wstETH back to ETH.', async () => {
+    // Call convert to swap ETH to wstETH tokens and return them to caller.
 
     const depositETH = '300000';
 
@@ -89,10 +89,49 @@ describe('lido defi bridge', function () {
 
     // ensure async is false
     expect(isAsync).toBe(false);
+
+    // Call convert to swap wstETH to ETH tokens then return them to caller.
+
+    const prevETHBalance = await signer.provider!.getBalance(bridgeProxy.address);
+    console.log(`prev: ${prevETHBalance}`);
+
+    const unwrapResult = await bridgeProxy.convert(
+      signer,
+      lidoBridgeAddress,
+      {
+        assetType: AztecAssetType.ERC20,
+        id: 1,
+        erc20Address: wstETHAddress
+      },
+      {},
+      {
+        assetType: AztecAssetType.ETH,
+        id: 0
+      },
+      {},
+      outputValueA,
+      1n,
+      0n
+    );
+
+    // ensure async is false
+    expect(unwrapResult.isAsync).toBe(false);
+
+    // ensure output value A is 0
+    expect(unwrapResult.outputValueA).not.toBe(0n);
+
+    // check eth balance of bridge proxy
+    const signerBalance = await signer.provider!.getBalance(bridgeProxy.address);
+
+    console.log(`current: ${signerBalance}`);
+    expect(signerBalance.sub(prevETHBalance).toBigInt()).toBe(unwrapResult.outputValueA);
+
+    // ensure output value b is 0
+    expect(unwrapResult.outputValueB).toBe(0n);
   });
 
-  it('should stake eth and get stETH back in curve', async () => {
-    // Call convert to swap ETH to ERC20 tokens and return them to caller.
+  it('should stake eth and get stETH back in curve. Also able to convert wstETH back to ETH.', async () => {
+    // Call convert to swap ETH to wstETH tokens and return them to caller.
 
     const depositETH = '100';
 
@@ -128,5 +167,44 @@ describe('lido defi bridge', function () {
 
     // ensure async is false
     expect(isAsync).toBe(false);
+
+    // Call convert to swap wstETH to ETH tokens then return them to caller.
+
+    const prevETHBalance = await signer.provider!.getBalance(bridgeProxy.address);
+    console.log(`prev: ${prevETHBalance}`);
+
+    const unwrapResult = await bridgeProxy.convert(
+      signer,
+      lidoBridgeAddress,
+      {
+        assetType: AztecAssetType.ERC20,
+        id: 1,
+        erc20Address: wstETHAddress
+      },
+      {},
+      {
+        assetType: AztecAssetType.ETH,
+        id: 0
+      },
+      {},
+      outputValueA,
+      1n,
+      0n
+    );
+
+    // ensure async is false
+    expect(unwrapResult.isAsync).toBe(false);
+
+    // ensure output value A is 0
+    expect(unwrapResult.outputValueA).not.toBe(0n);
+
+    // check eth balance of bridge proxy
+    const signerBalance = await signer.provider!.getBalance(bridgeProxy.address);
+
+    console.log(`current: ${signerBalance}`);
+    expect(signerBalance.sub(prevETHBalance).toBigInt()).toBe(unwrapResult.outputValueA);
+
+    // ensure output value b is 0
+    expect(unwrapResult.outputValueB).toBe(0n);
   });
 });
